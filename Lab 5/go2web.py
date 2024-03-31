@@ -1,29 +1,49 @@
 import socket
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, NavigableString
 import sys
 from urllib.parse import urlparse
+
+user_agent = '\r\nUser-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36 OPR/107.0.0.0'
 
 
 def send_request(url):
     parsed_url = urlparse(url)
     host = parsed_url.netloc
-    path = parsed_url.path
+    if parsed_url.path:
+        path = parsed_url.path
+    else:
+        path = "/"
     port = 80
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sock.connect((host, port))
-    sock.send(f'GET {path} HTTP/1.1\r\nHost:{host}\r\nConnection: close\r\n\r\n'.encode())
+    sock.send(f'GET {path} HTTP/1.1\r\nHost:{host}\r\nConnection: close{user_agent}\r\n\r\n'.encode())
     response = b''
     data = 1
     while data:
         data = sock.recv(1024)
         response += data
     sock.close()
-    return BeautifulSoup(response.decode(), 'html.parser').body.get_text()
+
+    headers = response.split(b"\r\n\r\n")[0].decode().splitlines()
+
+    for header in headers:
+        if header.lower().startswith("location"):
+            redirect_url = header.split(": ")[1]
+            break
+
+    for header in headers:
+        if header.lower().startswith("content-type"):
+            ctype = header.split(": ")[1]
+            break
+    # print(response.decode())
+    return response.decode()
 
 
 def get_page(url):
-    print(send_request(url))
-    ...
+    res = send_request(url)
+    soup = BeautifulSoup(res, 'html.parser')
+    contents = soup.get_text(separator='\n\n', strip=True).strip()
+    print(contents)
 
 
 def google_search(url):
@@ -53,7 +73,6 @@ go2web -h               # show this help
             print("Command 'go2web -s <search-term>' expects at least a single search term")
             sys.exit(1)
         search_term = tuple(sys.argv[2:])
-        print(search_term)
         google_search(search_term)
 
     else:
