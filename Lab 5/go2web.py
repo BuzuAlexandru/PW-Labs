@@ -3,7 +3,8 @@ from bs4 import BeautifulSoup
 import sys
 from urllib.parse import urlparse
 
-user_agent = '\r\nUser-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36 OPR/107.0.0.0'
+user_agent = ('\r\nUser-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) '
+              'Chrome/121.0.0.0 Safari/537.36 OPR/107.0.0.0')
 
 with open('cache.json', 'r') as f:
     cache = json.load(f)
@@ -48,12 +49,9 @@ def send_request(url):
     for header in headers:
         if header.lower().startswith("location"):
             redirect_url = header.split(": ")[1]
+            print('Redirecting')
             return send_request(redirect_url)
 
-    for header in headers:
-        if header.lower().startswith("content-type"):
-            ctype = header.split(": ")[1]
-            break
     try:
         decoded_response = response.decode('utf-8')
     except UnicodeDecodeError:
@@ -69,7 +67,11 @@ def send_request(url):
 def get_page(url):
     res = send_request(url)
     soup = BeautifulSoup(res, 'html.parser')
-    contents = soup.body.get_text(separator='\n\n', strip=True).strip()
+    if 'application/json' in res:
+        json_data = json.loads(res.split('\r\n\r\n', 1)[1])
+        contents = json.dumps(json_data, indent=4)
+    else:
+        contents = soup.body.get_text(separator='\n\n', strip=True).strip()
     print(contents)
 
 
