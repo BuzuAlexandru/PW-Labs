@@ -68,8 +68,10 @@ def get_page(url):
     res = send_request(url)
     soup = BeautifulSoup(res, 'html.parser')
     if 'application/json' in res:
-        json_data = json.loads(res.split('\r\n\r\n', 1)[1])
-        contents = json.dumps(json_data, indent=4)
+        json_str = res.split('\r\n\r\n', 1)[1]
+        json_str = json_str[json_str.find('{'):].rstrip('0\r\n')
+        json_data = json.loads(json_str)
+        contents = json.dumps(json_data, indent=4, ensure_ascii=False)
     else:
         contents = soup.body.get_text(separator='\n\n', strip=True).strip()
     print(contents)
