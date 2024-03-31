@@ -46,8 +46,17 @@ def get_page(url):
     print(contents)
 
 
-def google_search(url):
-    ...
+def google_search(search_terms):
+    query = ""
+    for term in search_terms:
+        query += term + '+'
+    url = "https://www.google.com/search?q=" + query[:-1]
+    res = send_request(url)
+    print(res)
+    soup = BeautifulSoup(res, 'html.parser')
+    print("\n Top 10 search results: \n")
+    for i, result in enumerate(soup.find_all('a')[16:26], start=1):
+        print(f"{i}. {result.text} - {result['href']}")
 
 
 def main():
